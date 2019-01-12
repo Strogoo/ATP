@@ -1,0 +1,10 @@
+name = "Advanced target priorities"
+version = 1.0
+copyright = "WTFPL"
+description = "Adds more presets and allows to make your own (see forum topic for instructions)"
+author = "Strogo"
+url = ""
+uid = "20dec73e-d4b2-11e5-ab30-625662811111"
+exclusive = false
+ui_only = true
+conflicts = {}
