@@ -31,6 +31,7 @@ local PrioritySettings = {
     buttonLayout = {
         {"ACU", "Units", "PD", "Engies", "Shields", "EXP"}, --first column. bottom --> top
         {"Mex", "Power", "SMD", "Arty", "Gunship", "Fighters"}, --second column. bottom --> top
+        {"Mex", "Power", "SMD", "Arty", "Gunship", "Fighters"}, --third column. bottom --> top
         },
 }
 
@@ -138,7 +139,7 @@ function CreatePrioBorder(parent)
     local x = 56 --topleft relative coordinates
     local y = -18
     
-    local width = 140
+    local width = 210
     local height = 155
 
     --corners
@@ -171,7 +172,7 @@ function CreatePrioBorder(parent)
 end
 
 function CreatePrioButtons(parent)
-    local buttons = {{},{}}
+    local buttons = {{},{},{}}
     local active = false
     
     local function CreateButton(prioTable, name, exclusive)
@@ -301,6 +302,20 @@ function CreatePrioButtons(parent)
             LayoutHelpers.AtLeftTopIn(buttons[2][i], buttons[1][1], 70, 0)
         else
             LayoutHelpers.Above(buttons[2][i], buttons[2][i-1])
+        end
+    end
+    
+    --third column
+    for i, name in PrioritySettings.buttonLayout[3] or {} do
+        
+        local name = PrioritySettings.buttonLayout[3][i]
+        
+        buttons[3][i] = CreateButton(PrioritySettings.priorityTables[name], name, PrioritySettings.exclusive[name])
+        
+        if i == 1 then 
+            LayoutHelpers.AtLeftTopIn(buttons[3][i], buttons[2][1], 70, 0)
+        else
+            LayoutHelpers.Above(buttons[3][i], buttons[3][i-1])
         end
     end
     
