@@ -18,7 +18,7 @@ local PrioritySettings = {
         ACU = "{categories.COMMAND}",
         Power = "{categories.ENERGYPRODUCTION * categories.STRUCTURE}",
         PD = "{categories.DEFENSE * categories.DIRECTFIRE * categories.STRUCTURE}",
-        Units = "{categories.MOBILE - categories.COMMAND - categories.EXPERIMENTAL}",
+        Units = "{categories.MOBILE - categories.COMMAND - categories.EXPERIMENTAL - categories.ENGINEER}",
         Shields = "{categories.SHIELD}",
         EXP = "{categories.EXPERIMENTAL}",
         Engies = "{categories.ENGINEER * categories.RECLAIMABLE}",
@@ -31,6 +31,12 @@ local PrioritySettings = {
             "categories.MASSEXTRACTION * categories.STRUCTURE * categories.TECH3, categories.MASSEXTRACTION * categories.STRUCTURE * categories.TECH2, "..
             "categories.ENERGYPRODUCTION * categories.STRUCTURE * categories.TECH3, categories.ENERGYPRODUCTION * categories.STRUCTURE * categories.TECH2, ".. 
             "categories.MASSFABRICATION * categories.STRUCTURE, categories.SHIELD,}",
+        Naval = "{categories.MOBILE * categories.NAVAL * categories.TECH3, categories.MOBILE * categories.NAVAL * categories.TECH2, categories.MOBILE * categories.NAVAL * categories.TECH1}",
+        Bships = "{categories.BATTLESHIP}",
+        Destros = "{categories.DESTROYER}",
+        Cruiser = "{categories.CRUISER}",
+        SACU = "{categories.SUBCOMMANDER}",
+        Factory = "{categories.TECH3 * categories.STRUCTURE * categories.FACTORY, categories.TECH2 * categories.STRUCTURE * categories.FACTORY, categories.TECH1 * categories.STRUCTURE * categories.FACTORY}",
     },
     exclusive = {ACU = false, Power = false, PD = false, Units = false, Shields = false, EXP = false, Engies = false,
                  Arty = false, Fighters = false, SMD = false, Gunship = false, Mex = false, Snipe = false},
@@ -98,3 +104,15 @@ KeyMapper.SetUserKeyAction('Shift_Mex', {action = 'UI_Lua import("/lua/keymap/mi
 --Snipe
 KeyMapper.SetUserKeyAction('Snipe', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Snipe")', category = 'Target priorities', order = 101})
 KeyMapper.SetUserKeyAction('Shift_Snipe', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Snipe")', category = 'Target priorities', order = 102})
+
+--Naval
+KeyMapper.SetUserKeyAction('target_Naval', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Naval")', category = 'Target priorities', order = 103})
+KeyMapper.SetUserKeyAction('Shift_target_Naval', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Naval")', category = 'Target priorities', order = 104})
+
+--Bships
+KeyMapper.SetUserKeyAction('target_Bships', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Bships")', category = 'Target priorities', order = 105})
+KeyMapper.SetUserKeyAction('Shift_target_Bships', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Bships")', category = 'Target priorities', order = 106})
+
+--Destros
+KeyMapper.SetUserKeyAction('target_Destros', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Destros")', category = 'Target priorities', order = 107})
+KeyMapper.SetUserKeyAction('Shift_target_Destros', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Destros")', category = 'Target priorities', order = 108})

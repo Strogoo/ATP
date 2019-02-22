@@ -25,13 +25,19 @@ local PrioritySettings = {
             "categories.MASSEXTRACTION * categories.STRUCTURE * categories.TECH3, categories.MASSEXTRACTION * categories.STRUCTURE * categories.TECH2, "..
             "categories.ENERGYPRODUCTION * categories.STRUCTURE * categories.TECH3, categories.ENERGYPRODUCTION * categories.STRUCTURE * categories.TECH2, ".. 
             "categories.MASSFABRICATION * categories.STRUCTURE, categories.SHIELD,}",
+        Naval = "{categories.MOBILE * categories.NAVAL * categories.TECH3, categories.MOBILE * categories.NAVAL * categories.TECH2, categories.MOBILE * categories.NAVAL * categories.TECH1}",
+        Bships = "{categories.BATTLESHIP}",
+        Destros = "{categories.DESTROYER}",
+        Cruiser = "{categories.CRUISER}",
+        SACU = "{categories.SUBCOMMANDER}",
+        Factory = "{categories.TECH3 * categories.STRUCTURE * categories.FACTORY, categories.TECH2 * categories.STRUCTURE * categories.FACTORY, categories.TECH1 * categories.STRUCTURE * categories.FACTORY}",
     },
     exclusive = {ACU = false, Power = false, PD = false, Units = false, Shields = false, EXP = false, Engies = false,
                  Arty = false, Fighters = false, SMD = false, Gunship = false, Mex = false, Snipe = false},
     buttonLayout = {
         {"ACU", "Units", "PD", "Engies", "Shields", "EXP"}, --first column. bottom --> top
         {"Mex", "Power", "SMD", "Arty", "Gunship", "Fighters"}, --second column. bottom --> top
-        {"Mex", "Power", "SMD", "Arty", "Gunship", "Fighters"}, --third column. bottom --> top
+        {"Factory", "SACU", "Cruiser", "Destros", "Bships", "Naval"}, --third column. bottom --> top
         },
 }
 
@@ -50,8 +56,14 @@ local prioStateTextures = {
     Gunship = textures..'gunship.dds',
     Mex = textures..'mex.dds',
     Snipe = textures..'snipe.dds',
-    Mixed = textures..'/mixed.dds',
+    Mixed = textures..'mixed.dds',
     Empty = textures..'smallBlack.dds',
+    Factory = textures..'Factory.dds',
+    SACU = textures..'SACU.dds',
+    Cruiser = textures..'Cruiser.dds',
+    Destros = textures..'Destros.dds',
+    Bships = textures..'Bships.dds',
+    Naval = textures..'Naval.dds',
 }
 
 function UpdateToggleIcon(control)
