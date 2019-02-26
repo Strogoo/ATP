@@ -1,8 +1,12 @@
+local Dragger = import('/lua/maui/dragger.lua').Dragger
+
+local createSettingsWindow
 local textures = '/mods/Advanced target priorities/textures/'
 local originalIsToggleMode = IsToggleMode
 local originalUpdateToggleIcon = UpdateToggleIcon
-local actualUnitList
-local separateWindow = false
+local originalCreateCommonOrders = CreateCommonOrders
+local attackOrder = false
+local separateWindow
 
 local currentPreset = "Default"
 
@@ -41,6 +45,36 @@ local PrioritySettings = {
         },
 }
 
+local defaultPrefs = {
+    buttonLayoutSeparate = {
+        {}, 
+        {},
+        {},
+        },
+    showSeparateWindow = false,
+    lockSeparateWindow = false,
+    windowWidth = 120,
+    windowHeight = 155,
+    hideAbilities = false,
+}
+
+local PrioritySettingsPrefs
+local tempPrefs = Prefs.GetFromCurrentProfile("AdvancedPriotities")
+
+if tempPrefs then
+    for k,tbl in tempPrefs.buttonLayoutSeparate do
+        for k, name in tbl do
+            if name == 'false' then
+                tbl[k] = nil
+            end
+        end
+    end
+    
+    PrioritySettingsPrefs = tempPrefs
+else
+    PrioritySettingsPrefs = defaultPrefs
+end
+
 local prioStateTextures = {
     Default = textures..'default.dds',
     ACU = textures..'ACU.dds',
@@ -66,10 +100,23 @@ local prioStateTextures = {
     Naval = textures..'Naval.dds',
 }
 
-function UpdateToggleIcon(control)
-    UpdatePrioState(control)
-   
-    originalUpdateToggleIcon(control)
+function CreateCommonOrders(availableOrders, init)
+    originalCreateCommonOrders(availableOrders, init)
+
+    if currentSelection[1] then
+        if not orderCheckboxMap.RULEUCC_Attack._isDisabled then
+            attackOrder = true
+        else
+            attackOrder = false
+            if separateWindow then
+                separateWindow:Hide()
+            end    
+        end
+        
+        UpdatePrioState()
+    elseif separateWindow then
+        separateWindow:Hide()    
+    end
 end
 
 function CheckForMixedPriorities(units)
@@ -127,6 +174,14 @@ function UpdatePrioState()
             control.prioState.textBitmap.text = UIUtil.CreateText(control.prioState.textBitmap, priority, 10, 'Arial')
             control.prioState.textBitmap.text:SetColor("White")
             LayoutHelpers.AtCenterIn(control.prioState.textBitmap.text, control.prioState)
+        end
+        
+        if attackOrder and PrioritySettingsPrefs.showSeparateWindow then
+            if separateWindow then
+                UpdateSeparateWindow()
+            else    
+                CreateSeparateWindow()
+            end
         end
     end
 end
@@ -331,26 +386,40 @@ function CreatePrioButtons(parent)
         end
     end
     
+    --settings button
+    buttons.settings = Checkbox(parent)
+    
+    buttons.settings.Width:Set(14)
+    buttons.settings.Height:Set(14)
+    
+    buttons.settings:SetNewTextures(
+        UIUtil.UIFile(textures..'Expand.dds'),
+        UIUtil.UIFile(textures..'Expand.dds'),
+        UIUtil.UIFile(textures..'Expand2.dds'),
+        UIUtil.UIFile(textures..'Expand2.dds')
+        )
+    buttons.settings.OnCheck = function(control, checked)
+        if not createSettingsWindow then
+            createSettingsWindow = import('/mods/Advanced target priorities/modules/settings.lua').CreateSettingsWindow
+        end
+        
+        createSettingsWindow()
+    end
+    LayoutHelpers.AtLeftTopIn(buttons.settings, parent.prioBorder.topright, 2, 4)
+    
     return buttons
 end
 
 function CreateFirestatePopup(parent, selected)
     local bg = Bitmap(parent, UIUtil.UIFile('/game/ability_brd/chat_brd_m.dds'))
 
-    if not separateWindow then
-        bg.border = CreateBorder(bg)
-        bg.prioBorder = CreatePrioBorder(bg)
-        
-        bg:DisableHitTest(true)
-        
-        bg.prioButtons = CreatePrioButtons(bg)
-    else
-        bg.border = CreateBorder(bg)
-        
-        bg:DisableHitTest(true)
-    end    
-    
-    
+    bg.border = CreateBorder(bg)
+    bg.prioBorder = CreatePrioBorder(bg)
+
+    bg:DisableHitTest(true)
+
+    bg.prioButtons = CreatePrioButtons(bg)
+
     local function CreateButton(index, info)
         local btn = Checkbox(bg, GetOrderBitmapNames(info.bitmap))
         btn.info = info
@@ -396,7 +465,318 @@ function CreateFirestatePopup(parent, selected)
         LayoutHelpers.Above(bg, parent, 20)
     end
 
+    bg.Depth:Set(30)
     return bg
+end
+
+function CreateSeparateWindow()
+    if separateWindow then
+        separateWindow:Destroy()
+        separateWindow = nil
+    end
+    
+    local width = PrioritySettingsPrefs.windowWidth
+    local height = PrioritySettingsPrefs.windowHeight
+    local backgroundDepth = 20
+    
+    local posX = PrioritySettingsPrefs.posX
+    local posY = PrioritySettingsPrefs.posY
+    
+    ----------- Back and borders-------------
+    -----------------------------------------
+    separateWindow = Bitmap(GetFrame(0), UIUtil.UIFile('/game/ability_brd/chat_brd_m.dds'))
+    separateWindow.Depth:Set(backgroundDepth)
+    separateWindow.Width:Set(width)
+    separateWindow.Height:Set(height)
+    if posX and posY then
+        separateWindow.Left:Set(posX)
+        separateWindow.Top:Set(posY)
+    else
+        LayoutHelpers.AtLeftTopIn(separateWindow, controls.bg, 340, -120)    
+    end
+    
+    separateWindow.HandleEvent = function(self, event)
+        if event.Type == 'ButtonPress' and not PrioritySettingsPrefs.lockSeparateWindow then
+            local drag = Dragger()
+            local offX = event.MouseX - self.Left()
+            local offY = event.MouseY - self.Top()
+            
+            drag.OnMove = function(dragself, x, y)
+                self.Left:Set(x - offX)
+                self.Top:Set(y - offY)
+                GetCursor():SetTexture(UIUtil.GetCursor('MOVE_WINDOW'))
+            end
+
+            drag.OnRelease = function(dragself)
+                GetCursor():Reset()
+                drag:Destroy()
+                PrioritySettingsPrefs.posX = self.Left()
+                PrioritySettingsPrefs.posY = self.Top()
+                UpdatePriorityPrefs()
+            end
+            
+            PostDragger(self:GetRootFrame(), event.KeyCode, drag)
+        end
+    end
+
+    separateWindow.topleft = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_ul.dds'))
+    LayoutHelpers.AtLeftTopIn(separateWindow.topleft, separateWindow, -18, -18)
+    separateWindow.topleft.Depth:Set(backgroundDepth)
+
+    separateWindow.topright = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_ur.dds'))
+    LayoutHelpers.AtRightTopIn(separateWindow.topright, separateWindow, -18, -18)
+    separateWindow.topright.Depth:Set(backgroundDepth)
+    
+    separateWindow.bottomleft = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_ll.dds'))
+    LayoutHelpers.AtLeftTopIn(separateWindow.bottomleft, separateWindow, -18, height)
+    separateWindow.bottomleft.Depth:Set(backgroundDepth)
+    
+    separateWindow.bottomright = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_lr.dds'))
+    LayoutHelpers.AtRightTopIn(separateWindow.bottomright, separateWindow, -18, height)
+    separateWindow.bottomright.Depth:Set(backgroundDepth)
+    
+    separateWindow.topmid = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_horz_um.dds'))
+    LayoutHelpers.AtLeftTopIn(separateWindow.topmid, separateWindow, 0, -18)
+    separateWindow.topmid.Width:Set(width)
+    separateWindow.topmid.Depth:Set(backgroundDepth)
+    
+    separateWindow.bottommid = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_lm.dds'))
+    LayoutHelpers.AtLeftTopIn(separateWindow.bottommid, separateWindow, 0, height)
+    separateWindow.bottommid.Width:Set(width)
+    separateWindow.bottommid.Depth:Set(backgroundDepth)
+    
+    separateWindow.midleft = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_vert_l.dds'))
+    LayoutHelpers.AtLeftTopIn(separateWindow.midleft, separateWindow, -18, 0)
+    separateWindow.midleft.Height:Set(height)
+    separateWindow.midleft.Depth:Set(backgroundDepth)
+    
+    separateWindow.midright = Bitmap(separateWindow, UIUtil.UIFile('/game/ability_brd/chat_brd_vert_r.dds'))
+    LayoutHelpers.AtRightTopIn(separateWindow.midright, separateWindow, -18, 0)
+    separateWindow.midright.Height:Set(height)
+    separateWindow.midright.Depth:Set(backgroundDepth)
+    
+    ---------Buttons---------
+    -------------------------
+    
+    separateWindow.Buttons = {}
+    separateWindow.ActiveButton = currentPreset
+    local active = false
+    local buttons = separateWindow.Buttons
+    
+    --"Default" button
+    buttons.Default = Checkbox(separateWindow)
+    
+    buttons.Default.Width:Set(70)
+    buttons.Default.Height:Set(30)
+    
+    if currentPreset == "Default" then
+        buttons.Default:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds')
+        )
+        
+        separateWindow.ActiveButton = "Default"
+        active = true
+    else
+        buttons.Default:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds')
+        )
+    end    
+    
+    LayoutHelpers.AtLeftTopIn(buttons.Default, separateWindow, -8, height - 22)
+    buttons.Default.OnCheck = function(control, checked)
+        SetWeaponPriorities(0, "Default")
+    end
+    LayoutHelpers.AtCenterIn(UIUtil.CreateText(separateWindow, "Default", 18, UIUtil.bodyFont), buttons.Default)
+    
+    
+    --"Snipe" button
+    buttons.Snipe = Checkbox(separateWindow)
+    
+    buttons.Snipe.Width:Set(70)
+    buttons.Snipe.Height:Set(30)
+    
+    if not active and currentPreset == "Snipe" then
+        buttons.Snipe:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds')
+        )
+        
+        active = true
+        separateWindow.ActiveButton = "Snipe"
+    else
+        buttons.Snipe:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds')
+        )
+    end
+    
+    LayoutHelpers.AtLeftTopIn(buttons.Snipe, buttons.Default, 70, 0)
+    buttons.Snipe.OnCheck = function(control, checked)
+        SetWeaponPriorities(PrioritySettings.priorityTables.Snipe, "Snipe", false)
+    end
+    LayoutHelpers.AtCenterIn(UIUtil.CreateText(separateWindow, "Snipe", 18, UIUtil.bodyFont), buttons.Snipe)
+    
+    
+    --small buttons
+    local function CreateButton(prioTable, name, exclusive)
+        local btn = Checkbox(separateWindow)
+      
+        btn.Width:Set(70)
+        btn.Height:Set(20)
+    
+        if not active and name == currentPreset then
+            btn:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button2.dds'),
+            UIUtil.UIFile(textures..'Button2.dds')
+            )
+            
+            active = true
+        else
+            btn:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button2.dds'),
+            UIUtil.UIFile(textures..'Button2.dds')
+            )
+        end
+        
+        if name then 
+            btn.OnCheck = function(control, checked)
+                SetWeaponPriorities(prioTable, name, exclusive)
+            end
+            
+            LayoutHelpers.AtLeftTopIn(UIUtil.CreateText(separateWindow, name, 14, UIUtil.bodyFont), btn, 10, 0)  
+        else -- empty button
+            btn:DisableHitTest()
+        end   
+        
+        return btn
+    end
+    
+    
+    local previousButton
+    
+    --first column
+
+    for i, name in PrioritySettingsPrefs.buttonLayoutSeparate[1] or {} do
+        
+        local name = PrioritySettingsPrefs.buttonLayoutSeparate[1][i]
+        
+        buttons[name] = CreateButton(PrioritySettings.priorityTables[name], name, PrioritySettings.exclusive[name])
+        
+        LayoutHelpers.AtLeftTopIn(buttons[name], buttons.Default, 0, -2 - 20 * i)
+    end
+    
+    --second column
+    for i, name in PrioritySettingsPrefs.buttonLayoutSeparate[2] or {} do
+        
+        local name = PrioritySettingsPrefs.buttonLayoutSeparate[2][i]
+        
+        buttons[name] = CreateButton(PrioritySettings.priorityTables[name], name, PrioritySettings.exclusive[name])
+        
+        LayoutHelpers.AtLeftTopIn(buttons[name], buttons.Snipe, 0, -2 - 20 * i)
+    end
+    
+    --third column
+    for i, name in PrioritySettingsPrefs.buttonLayoutSeparate[3] or {} do
+        
+        local name = PrioritySettingsPrefs.buttonLayoutSeparate[3][i]
+        
+        buttons[name] = CreateButton(PrioritySettings.priorityTables[name], name, PrioritySettings.exclusive[name])
+        
+        LayoutHelpers.AtLeftTopIn(buttons[name], buttons.Snipe, 70, -2 - 20 * i)
+    end
+end
+
+function UpdateSeparateWindow()
+    separateWindow:Show()
+    
+    local activeButton = separateWindow.ActiveButton
+    
+    if currentPreset == activeButton then
+        return
+    end
+
+    if activeButton == "Default" or activeButton == "Snipe" then
+        separateWindow.Buttons[activeButton]:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds')
+        )
+    elseif separateWindow.Buttons[activeButton] then
+        separateWindow.Buttons[activeButton]:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button1.dds'),
+            UIUtil.UIFile(textures..'Button2.dds'),
+            UIUtil.UIFile(textures..'Button2.dds')
+        )
+    end
+    
+    
+    if currentPreset == "Default" or currentPreset == "Snipe" then
+        separateWindow.Buttons[currentPreset]:SetNewTextures(
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button1active.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds'),
+            UIUtil.UIFile(textures..'Button2big.dds')
+        )
+    elseif separateWindow.Buttons[currentPreset] then
+        separateWindow.Buttons[currentPreset]:SetNewTextures(
+        UIUtil.UIFile(textures..'Button1active.dds'),
+        UIUtil.UIFile(textures..'Button1active.dds'),
+        UIUtil.UIFile(textures..'Button2.dds'),
+        UIUtil.UIFile(textures..'Button2.dds')
+        )    
+    end
+    
+    separateWindow.ActiveButton = currentPreset
+end
+
+function UpdatePriorityPrefs()
+    local modifiedTablePrefs = table.deepcopy(PrioritySettingsPrefs)
+    
+    for k,tbl in modifiedTablePrefs.buttonLayoutSeparate do
+        i = 1
+        while i < 7 do
+            if not tbl[i] then
+                tbl[i] = 'false'
+            end
+            
+            i = i + 1
+        end
+    end
+    
+    Prefs.SetToCurrentProfile("AdvancedPriotities", modifiedTablePrefs)
+    Prefs.SavePreferences()
+    import('/lua/ui/game/unitview.lua').UpdateAbilitiesSettings()  
+end
+
+function GetPrioritySettingsPrefs()
+    return PrioritySettingsPrefs
+end
+
+function GetPrioritySettings()
+    return PrioritySettings
+end
+
+function DestroySeparateWindow()
+    if separateWindow then
+        separateWindow:Destroy()
+        separateWindow = nil
+    end 
 end
 
 function ToggleMode()

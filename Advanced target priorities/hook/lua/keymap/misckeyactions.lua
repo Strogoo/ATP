@@ -1,48 +1,23 @@
 local originalSetWeaponPriorities = SetWeaponPriorities
 local updatePrioState
 local KeyMapper = import('/lua/keymap/keymapper.lua')
+local PrioritySettings
 
 function SetWeaponPriorities(prioritiesString, name, exclusive)
     originalSetWeaponPriorities(prioritiesString, name, exclusive)
     
     if updatePrioState then
-        ForkThread(function() WaitSeconds(0.1) updatePrioState() WaitSeconds(0.1) updatePrioState() end)
+        ForkThread(function() WaitSeconds(0.1) updatePrioState() WaitSeconds(0.1) updatePrioState() WaitSeconds(0.2) updatePrioState() end)
     else
         updatePrioState = import('/lua/ui/game/orders.lua').UpdatePrioState
-        ForkThread(function() WaitSeconds(0.1) updatePrioState() WaitSeconds(0.1) updatePrioState() end)
+        ForkThread(function() WaitSeconds(0.1) updatePrioState() WaitSeconds(0.1) updatePrioState() WaitSeconds(0.2) updatePrioState() end)
     end
 end
 
-local PrioritySettings = {
-    priorityTables = {
-        ACU = "{categories.COMMAND}",
-        Power = "{categories.ENERGYPRODUCTION * categories.STRUCTURE}",
-        PD = "{categories.DEFENSE * categories.DIRECTFIRE * categories.STRUCTURE}",
-        Units = "{categories.MOBILE - categories.COMMAND - categories.EXPERIMENTAL - categories.ENGINEER}",
-        Shields = "{categories.SHIELD}",
-        EXP = "{categories.EXPERIMENTAL}",
-        Engies = "{categories.ENGINEER * categories.RECLAIMABLE}",
-        Arty = "{categories.ARTILLERY}",
-        Fighters = "{categories.AIR * categories.ANTIAIR - categories.EXPERIMENTAL}",
-        SMD = "{categories.TECH3 * categories.STRUCTURE * categories.ANTIMISSILE}",
-        Gunship = "{categories.AIR * categories.GROUNDATTACK}",
-        Mex = "{categories.MASSEXTRACTION}",
-        Snipe = "{categories.COMMAND, categories.STRATEGIC, categories.ANTIMISSILE * categories.TECH3, "..
-            "categories.MASSEXTRACTION * categories.STRUCTURE * categories.TECH3, categories.MASSEXTRACTION * categories.STRUCTURE * categories.TECH2, "..
-            "categories.ENERGYPRODUCTION * categories.STRUCTURE * categories.TECH3, categories.ENERGYPRODUCTION * categories.STRUCTURE * categories.TECH2, ".. 
-            "categories.MASSFABRICATION * categories.STRUCTURE, categories.SHIELD,}",
-        Naval = "{categories.MOBILE * categories.NAVAL * categories.TECH3, categories.MOBILE * categories.NAVAL * categories.TECH2, categories.MOBILE * categories.NAVAL * categories.TECH1}",
-        Bships = "{categories.BATTLESHIP}",
-        Destros = "{categories.DESTROYER}",
-        Cruiser = "{categories.CRUISER}",
-        SACU = "{categories.SUBCOMMANDER}",
-        Factory = "{categories.TECH3 * categories.STRUCTURE * categories.FACTORY, categories.TECH2 * categories.STRUCTURE * categories.FACTORY, categories.TECH1 * categories.STRUCTURE * categories.FACTORY}",
-    },
-    exclusive = {ACU = false, Power = false, PD = false, Units = false, Shields = false, EXP = false, Engies = false,
-                 Arty = false, Fighters = false, SMD = false, Gunship = false, Mex = false, Snipe = false},
-}
-
 function SetWeaponPrioritiesHotkey(name)
+    if not PrioritySettings then
+        PrioritySettings = import('/lua/ui/game/orders.lua').GetPrioritySettings()
+    end    
     SetWeaponPriorities(PrioritySettings.priorityTables[name], name, PrioritySettings.exclusive[name]) 
 end
 
