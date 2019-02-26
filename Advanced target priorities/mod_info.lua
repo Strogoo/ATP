@@ -1,5 +1,5 @@
 name = "Advanced target priorities"
-version = 1.0
+version = 1.1
 copyright = "WTFPL"
 description = "Adds more presets and allows to make your own (see forum topic for instructions)"
 author = "Strogo"
