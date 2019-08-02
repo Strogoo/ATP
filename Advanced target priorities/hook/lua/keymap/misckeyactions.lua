@@ -92,3 +92,4 @@ KeyMapper.SetUserKeyAction('Shift_target_Bships', {action = 'UI_Lua import("/lua
 KeyMapper.SetUserKeyAction('target_Destros', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Destros")', category = 'Target priorities', order = 107})
 KeyMapper.SetUserKeyAction('Shift_target_Destros', {action = 'UI_Lua import("/lua/keymap/misckeyactions.lua").SetWeaponPrioritiesHotkey("Destros")', category = 'Target priorities', order = 108})
 
+----
